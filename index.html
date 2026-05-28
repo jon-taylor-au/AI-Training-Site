@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sparke AI Training</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a1628;
+    --accent: #2563eb;
+    --text: #ffffff;
+    --surface: #f1f5f9;
+    --success: #16a34a;
+    --muted: #94a3b8;
+    --card-bg: #111f3a;
+    --card-border: #1e3358;
+    --header-h: auto;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── Progress bar ── */
+  #progress-bar-wrap {
+    background: var(--card-border);
+    height: 6px;
+    width: 100%;
+  }
+  #progress-bar-fill {
+    height: 6px;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  /* ── Header ── */
+  #header {
+    background: #0d1f3c;
+    border-bottom: 1px solid var(--card-border);
+    padding: 14px 20px;
+  }
+
+  #header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  #platform-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  #header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  #xp-counter {
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  /* ── Badge shelf ── */
+  #badge-shelf {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+
+  .badge-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .badge-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #1e3358;
+    border: 2px solid #2a4270;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    opacity: 0.45;
+    transition: opacity 0.3s, border-color 0.3s;
+  }
+
+  .badge-icon.earned {
+    opacity: 1;
+    border-color: var(--success);
+    background: #14532d;
+  }
+
+  .badge-label {
+    font-size: 0.58rem;
+    color: var(--muted);
+    text-align: center;
+    max-width: 44px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ── Progress label ── */
+  #progress-label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 10px;
+  }
+
+  /* ── Main ── */
+  #main {
+    padding: 28px 20px 48px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  /* ── Screens ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── Home screen ── */
+  #home-screen h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  #home-screen p.subtitle {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 24px;
+  }
+
+  #module-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+
+  @media (max-width: 680px) {
+    #module-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 420px) {
+    #module-grid { grid-template-columns: 1fr; }
+  }
+
+  .module-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 20px 18px;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  .module-card.unlocked:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  .module-card.locked {
+    cursor: default;
+    opacity: 0.6;
+  }
+
+  .module-card.escape-room {
+    grid-column: span 1;
+  }
+
+  .card-eyebrow {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin-bottom: 12px;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+  }
+
+  .card-xp {
+    font-size: 0.78rem;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .card-status {
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .card-status.unlocked-icon {
+    color: var(--success);
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: #14532d;
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+
+  /* ── Module panel ── */
+  #module-screen {
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  #back-btn {
+    background: none;
+    border: 1px solid var(--card-border);
+    color: var(--muted);
+    padding: 7px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    margin-bottom: 24px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  #back-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+
+  #module-screen h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  #module-content-area {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 28px 24px;
+    margin-top: 20px;
+    color: var(--muted);
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+
+  /* ── API Key Modal ── */
+  #modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+
+  #modal-overlay.hidden { display: none; }
+
+  #api-modal {
+    background: #0d1f3c;
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 32px 28px;
+    max-width: 440px;
+    width: 100%;
+  }
+
+  #api-modal h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  #api-modal p {
+    color: var(--muted);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+
+  #api-modal label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 6px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  #api-key-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--card-border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-family: monospace;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+  }
+
+  #api-key-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  #modal-error {
+    color: #f87171;
+    font-size: 0.8rem;
+    margin-bottom: 12px;
+    display: none;
+  }
+
+  #api-submit-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 11px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  #api-submit-btn:hover { background: #1d4ed8; }
+
+  .modal-note {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 12px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<!-- Progress bar -->
+<div id="progress-bar-wrap">
+  <div id="progress-bar-fill"></div>
+</div>
+
+<!-- Header -->
+<header id="header">
+  <div id="header-top">
+    <span id="platform-title">Sparke AI Training</span>
+    <div id="header-right">
+      <span id="xp-counter">0 XP</span>
+    </div>
+  </div>
+
+  <div id="badge-shelf" aria-label="Badge shelf"></div>
+
+  <div id="progress-label">0 of 9 complete</div>
+</header>
+
+<!-- Main content -->
+<main id="main">
+
+  <!-- Home screen -->
+  <section id="home-screen" class="screen active">
+    <h2>Your training modules</h2>
+    <p class="subtitle">Complete each module in order to unlock the next. Earn XP and badges as you go.</p>
+    <div id="module-grid"></div>
+  </section>
+
+  <!-- Module view screen -->
+  <section id="module-screen" class="screen">
+    <button id="back-btn">← Back to modules</button>
+    <h2 id="module-screen-title"></h2>
+    <div id="module-content-area"></div>
+  </section>
+
+</main>
+
+<!-- API Key Modal -->
+<div id="modal-overlay">
+  <div id="api-modal" role="dialog" aria-modal="true" aria-labelledby="modal-heading">
+    <h2 id="modal-heading">Enter your API key</h2>
+    <p>This platform uses the Anthropic API for interactive exercises. Your key is used only in this session and is never saved.</p>
+    <label for="api-key-input">Anthropic API Key</label>
+    <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+    <div id="modal-error">Please enter a valid API key (starts with sk-ant-).</div>
+    <button id="api-submit-btn">Start training</button>
+    <p class="modal-note">Your key is stored only in memory and cleared when you close this tab.</p>
+  </div>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  var apiKey = '';
+  var state = {
+    xp: 0,
+    modulesComplete: 0,
+    completedModules: {},
+    badges: new Array(10).fill(false)
+  };
+
+  // ── Module definitions ─────────────────────────────────────────────────────
+  var modules = [
+    { id: 1,  label: 'Module 1',     title: 'What Is AI Actually Doing?', xp: 100, isEscapeRoom: false },
+    { id: 2,  label: 'Module 2',     title: 'Writing a Good Prompt',       xp: 100, isEscapeRoom: false },
+    { id: 3,  label: 'Module 3',     title: 'Productive Friction',         xp: 100, isEscapeRoom: false },
+    { id: 4,  label: 'Module 4',     title: 'What Not to Put In',          xp: 100, isEscapeRoom: false },
+    { id: 5,  label: 'Module 5',     title: 'Knowing When AI Is Wrong',    xp: 100, isEscapeRoom: false },
+    { id: 6,  label: 'Module 6',     title: 'AI for Your Actual Job',      xp: 100, isEscapeRoom: false },
+    { id: 7,  label: 'Module 7',     title: 'LYRA: Prompt Optimisation',   xp: 100, isEscapeRoom: false },
+    { id: 8,  label: 'Module 8',     title: 'Legal Prompt Library',        xp: 100, isEscapeRoom: false },
+    { id: 'er', label: 'Escape Room', title: 'The Escape Room',            xp: 400, isEscapeRoom: true  }
+  ];
+
+  var badgeNames = [
+    'First Contact',
+    'Prompt Apprentice',
+    'Friction Fighter',
+    'Vault Keeper',
+    'Hallucination Hunter',
+    'Role Player',
+    'LYRA Certified',
+    'Legal Eagle',
+    'Escape Artist',
+    'Full Stack Human'
+  ];
+
+  var badgeEmojis = ['👋','✏️','⚡','🔒','🔍','🎭','🧪','⚖️','🚪','🧑‍💻'];
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function isUnlocked(mod) {
+    if (mod.id === 1) return true;
+    if (mod.isEscapeRoom) return state.modulesComplete >= 8;
+    var prev = mod.id - 1;
+    return !!state.completedModules[prev];
+  }
+
+  // ── Render badge shelf ─────────────────────────────────────────────────────
+  function renderBadges() {
+    var shelf = document.getElementById('badge-shelf');
+    shelf.innerHTML = '';
+    for (var i = 0; i < 10; i++) {
+      var slot = document.createElement('div');
+      slot.className = 'badge-slot';
+
+      var icon = document.createElement('div');
+      icon.className = 'badge-icon' + (state.badges[i] ? ' earned' : '');
+      icon.textContent = badgeEmojis[i];
+      icon.title = badgeNames[i];
+
+      var lbl = document.createElement('div');
+      lbl.className = 'badge-label';
+      lbl.textContent = badgeNames[i];
+
+      slot.appendChild(icon);
+      slot.appendChild(lbl);
+      shelf.appendChild(slot);
+    }
+  }
+
+  // ── Render progress ────────────────────────────────────────────────────────
+  function renderProgress() {
+    var n = state.modulesComplete;
+    document.getElementById('progress-label').textContent = n + ' of 9 complete';
+    document.getElementById('progress-bar-fill').style.width = ((n / 9) * 100) + '%';
+    document.getElementById('xp-counter').textContent = state.xp + ' XP';
+  }
+
+  // ── Render module grid ─────────────────────────────────────────────────────
+  function renderGrid() {
+    var grid = document.getElementById('module-grid');
+    grid.innerHTML = '';
+
+    modules.forEach(function(mod) {
+      var unlocked = isUnlocked(mod);
+      var completed = !!state.completedModules[mod.id];
+
+      var card = document.createElement('div');
+      card.className = 'module-card ' + (unlocked ? 'unlocked' : 'locked');
+      if (mod.isEscapeRoom) card.classList.add('escape-room');
+
+      var eyebrow = document.createElement('div');
+      eyebrow.className = 'card-eyebrow';
+      eyebrow.textContent = mod.label;
+
+      var title = document.createElement('div');
+      title.className = 'card-title';
+      title.textContent = mod.title;
+
+      var footer = document.createElement('div');
+      footer.className = 'card-footer';
+
+      var xpEl = document.createElement('div');
+      xpEl.className = 'card-xp';
+      xpEl.textContent = '+' + mod.xp + ' XP';
+
+      var statusEl = document.createElement('div');
+      statusEl.className = 'card-status';
+      if (completed) {
+        statusEl.classList.add('unlocked-icon');
+        statusEl.textContent = '✓ Done';
+      } else if (unlocked) {
+        statusEl.classList.add('unlocked-icon');
+        statusEl.textContent = 'Start';
+      } else {
+        statusEl.textContent = '🔒';
+      }
+
+      footer.appendChild(xpEl);
+      footer.appendChild(statusEl);
+
+      card.appendChild(eyebrow);
+      card.appendChild(title);
+      card.appendChild(footer);
+
+      if (unlocked) {
+        card.addEventListener('click', function() { openModule(mod); });
+      }
+
+      grid.appendChild(card);
+    });
+  }
+
+  // ── Navigation ─────────────────────────────────────────────────────────────
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(function(s) {
+      s.classList.remove('active');
+    });
+    document.getElementById(id).classList.add('active');
+  }
+
+  function openModule(mod) {
+    document.getElementById('module-screen-title').textContent = mod.label + ': ' + mod.title;
+    document.getElementById('module-content-area').innerHTML =
+      '<p>' + mod.label + ' content coming soon.</p>';
+    showScreen('module-screen');
+    window.scrollTo(0, 0);
+  }
+
+  document.getElementById('back-btn').addEventListener('click', function() {
+    showScreen('home-screen');
+    window.scrollTo(0, 0);
+  });
+
+  // ── API key modal ──────────────────────────────────────────────────────────
+  var modalOverlay = document.getElementById('modal-overlay');
+  var apiKeyInput  = document.getElementById('api-key-input');
+  var modalError   = document.getElementById('modal-error');
+
+  document.getElementById('api-submit-btn').addEventListener('click', function() {
+    var val = apiKeyInput.value.trim();
+    if (!val || !val.startsWith('sk-ant-')) {
+      modalError.style.display = 'block';
+      apiKeyInput.focus();
+      return;
+    }
+    modalError.style.display = 'none';
+    apiKey = val;          // stored in JS variable only — never written to storage
+    apiKeyInput.value = '';
+    modalOverlay.classList.add('hidden');
+  });
+
+  apiKeyInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') document.getElementById('api-submit-btn').click();
+  });
+
+  // ── Initialise ─────────────────────────────────────────────────────────────
+  renderBadges();
+  renderProgress();
+  renderGrid();
+</script>
+</body>
+</html>

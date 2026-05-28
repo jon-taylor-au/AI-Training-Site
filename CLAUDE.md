@@ -129,7 +129,7 @@ Full system prompts for all three calls are in `04_api_prompts_reference.md`. Us
 
 ## Current Build Status
 
-- [ ] Stage 1 — Shell and Navigation
+- [x] Stage 1 — Shell and Navigation
 - [ ] Stage 2 — Module 1
 - [ ] Stage 3 — Module 2 (API Call #1)
 - [ ] Stage 4 — Module 3
