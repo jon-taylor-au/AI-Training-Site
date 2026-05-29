@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sparke AI Training</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0a1628;
+    --accent:    #2563eb;
+    --accent-hi: #3b82f6;
+    --text:      #ffffff;
+    --surface:   #f1f5f9;
+    --success:   #5b8f22;
+    --dark:      #0d1f3c;
+    --border:    #1e3358;
+    --muted:     #94a3b8;
+    --mid:       #64748b;
+    --red:       #aa1948;
+    --node-sz:   92px;
+    --boss-sz:   104px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Header ──────────────────────────────────────────────── */
+  #header {
+    background: var(--dark);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 22px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+
+  #logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  #logo-mark {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 2.5px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent);
+    font-weight: 800;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  #logo-text { font-size: 1rem; font-weight: 700; line-height: 1.1; }
+  #logo-sub  { font-size: 0.72rem; opacity: 0.55; font-weight: 400; }
+
+  #header-center {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 160px;
+  }
+
+  #progress-track {
+    flex: 1;
+    height: 10px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  #progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 20px;
+    width: 0%;
+    transition: width 0.6s cubic-bezier(.3,1.2,.4,1);
+  }
+
+  #progress-text {
+    font-size: 0.75rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  #header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  #xp-counter {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  #xp-counter svg { flex-shrink: 0; }
+
+  /* Badge shelf */
+  #badge-shelf {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+
+  .badge-dot {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.3);
+    background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.3s, border-color 0.3s;
+  }
+
+  .badge-dot.lit {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .badge-dot.pulsing {
+    animation: badge-pulse 0.9s ease-out forwards;
+  }
+
+  @keyframes badge-pulse {
+    0%   { transform: scale(1);    box-shadow: 0 0 0 0 rgba(37,99,235,0.7); }
+    40%  { transform: scale(1.35); box-shadow: 0 0 0 8px rgba(37,99,235,0); }
+    100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(37,99,235,0); }
+  }
+
+  /* ── Main ────────────────────────────────────────────────── */
+  #main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 28px 24px 60px;
+  }
+
+  #path-title {
+    text-align: center;
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+
+  #path-subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-bottom: 24px;
+  }
+
+  /* ── Path container ───────────────────────────────────────── */
+  #path-container {
+    position: relative;
+    margin: 0 auto;
+  }
+
+  #path-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  /* ── Path nodes ───────────────────────────────────────────── */
+  .node-wrap {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transform: translateX(-50%);
+    cursor: pointer;
+  }
+
+  .node-wrap.locked { cursor: default; }
+
+  .path-node {
+    width: var(--node-sz);
+    height: var(--node-sz);
+    border-radius: 50%;
+    border: 3px solid var(--border);
+    background: var(--dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  }
+
+  .path-node.boss {
+    width: var(--boss-sz);
+    height: var(--boss-sz);
+    border-color: var(--red);
+    background: #1a0a10;
+  }
+
+  .path-node.hero {
+    border-color: var(--accent-hi);
+    border-width: 3px;
+    animation: hero-pulse 2.4s ease-in-out infinite;
+  }
+
+  @keyframes hero-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.4); }
+    50%       { box-shadow: 0 0 0 10px rgba(37,99,235,0); }
+  }
+
+  .node-wrap:not(.locked):hover .path-node {
+    transform: translateY(-3px) rotate(1deg);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+    border-color: var(--accent-hi);
+  }
+
+  .node-wrap.boss-node:not(.locked):hover .path-node {
+    border-color: #c9204f;
+  }
+
+  .path-node.completed {
+    background: #0f2a0a;
+    border-color: var(--success);
+    opacity: 0.72;
+  }
+
+  .path-node.locked-state {
+    opacity: 0.55;
+  }
+
+  /* number badge */
+  .node-num {
+    position: absolute;
+    top: -2px; left: -2px;
+    background: var(--border);
+    color: var(--muted);
+    border-radius: 50%;
+    width: 22px; height: 22px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1;
+  }
+
+  .path-node.boss .node-num {
+    background: var(--red);
+    color: #fff;
+  }
+
+  /* check badge */
+  .node-check {
+    position: absolute;
+    bottom: -2px; right: -2px;
+    background: var(--success);
+    border-radius: 50%;
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* BOSS tag */
+  .boss-tag {
+    position: absolute;
+    top: -14px; left: 50%; transform: translateX(-50%);
+    background: var(--red);
+    color: #fff;
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    padding: 2px 7px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+
+  /* node label + xp */
+  .node-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-align: center;
+    max-width: 120px;
+    line-height: 1.25;
+    color: var(--text);
+  }
+
+  .node-wrap.locked .node-label { color: var(--muted); }
+
+  .xp-pill {
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+
+  .xp-pill.boss-pill { background: var(--red); }
+
+  /* ── Tooltip ──────────────────────────────────────────────── */
+  .tip-bubble {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--dark);
+    border: 1px solid var(--accent);
+    color: var(--text);
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    border-radius: 8px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  }
+
+  .tip-bubble::after {
+    content: "";
+    position: absolute;
+    top: 100%; left: 50%; transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--accent);
+  }
+
+  .tip-bubble.boss-tip { border-color: var(--red); }
+  .tip-bubble.boss-tip::after { border-top-color: var(--red); }
+
+  /* ── Slide-in panel ───────────────────────────────────────── */
+  #panel-scrim {
+    position: fixed; inset: 0;
+    background: rgba(10,22,40,0.6);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 40;
+  }
+
+  #panel-scrim.open { opacity: 1; pointer-events: auto; }
+
+  #slide-panel {
+    position: fixed;
+    top: 0; right: 0;
+    height: 100%; width: min(440px, 88vw);
+    background: var(--dark);
+    border-left: 1px solid var(--border);
+    z-index: 41;
+    transform: translateX(105%);
+    transition: transform 0.38s cubic-bezier(.3,1,.4,1);
+    display: flex; flex-direction: column;
+    padding: 26px;
+    gap: 18px;
+    overflow-y: auto;
+  }
+
+  #slide-panel.open { transform: translateX(0); }
+
+  #panel-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  #panel-mod-num {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  #panel-close {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.8rem;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  #panel-close:hover { border-color: var(--accent); color: var(--text); }
+
+  #panel-icon {
+    width: 70px; height: 70px;
+    border-radius: 16px;
+    background: rgba(37,99,235,0.12);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+
+  #panel-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+
+  #panel-xp {
+    align-self: flex-start;
+  }
+
+  #panel-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+  }
+
+  .content-line {
+    height: 10px;
+    background: var(--border);
+    border-radius: 4px;
+    opacity: 0.6;
+  }
+
+  .content-block {
+    height: 130px;
+    background: rgba(255,255,255,0.03);
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    margin-top: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--mid);
+    font-size: 0.85rem;
+  }
+
+  #panel-cta {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 13px;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: auto;
+    transition: background 0.2s;
+  }
+
+  #panel-cta:hover { background: var(--accent-hi); }
+
+  /* ── API Key Modal ────────────────────────────────────────── */
+  #modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.78);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+
+  #modal-overlay.hidden { display: none; }
+
+  #api-modal {
+    background: var(--dark);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 28px;
+    max-width: 440px; width: 100%;
+  }
+
+  #api-modal h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; }
+
+  #api-modal p {
+    color: var(--muted); font-size: 0.875rem;
+    line-height: 1.6; margin-bottom: 20px;
+  }
+
+  #api-modal label {
+    display: block; font-size: 0.78rem; font-weight: 600;
+    color: var(--muted); margin-bottom: 6px;
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+
+  #api-key-input {
+    width: 100%;
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 10px 14px;
+    border-radius: 8px; font-size: 0.9rem; font-family: monospace;
+    margin-bottom: 16px; transition: border-color 0.2s;
+  }
+
+  #api-key-input:focus { outline: none; border-color: var(--accent); }
+
+  #modal-error { color: #f87171; font-size: 0.8rem; margin-bottom: 12px; display: none; }
+
+  #api-submit-btn {
+    width: 100%; background: var(--accent); color: #fff;
+    border: none; padding: 11px; border-radius: 8px;
+    font-size: 0.95rem; font-weight: 600; cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  #api-submit-btn:hover { background: var(--accent-hi); }
+
+  .modal-note { font-size: 0.75rem; color: #475569; margin-top: 12px; text-align: center; }
+
+  /* ── Mobile tweaks ────────────────────────────────────────── */
+  @media (max-width: 520px) {
+    #header-center { display: none; }
+    #path-title    { font-size: 1.4rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────── -->
+<header id="header">
+  <div id="logo">
+    <div id="logo-mark">S</div>
+    <div>
+      <div id="logo-text">Sparke</div>
+      <div id="logo-sub">AI Training</div>
+    </div>
+  </div>
+
+  <div id="header-center">
+    <div id="progress-track"><div id="progress-fill"></div></div>
+    <span id="progress-text">0 of 9</span>
+  </div>
+
+  <div id="header-right">
+    <div id="xp-counter">
+      <!-- bolt icon -->
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="#2563eb" stroke="none">
+        <path d="M13 2l-8 11h6l-1 9 8-12h-6l1-8z"/>
+      </svg>
+      <span id="xp-val">0</span> XP
+    </div>
+    <div id="badge-shelf" aria-label="Badges"></div>
+  </div>
+</header>
+
+<!-- ── Main ───────────────────────────────────────────────── -->
+<main id="main">
+  <h1 id="path-title">Follow the path</h1>
+  <p id="path-subtitle">Each stop unlocks the next. The escape room waits at the end.</p>
+  <div id="path-container"></div>
+</main>
+
+<!-- ── Slide panel ─────────────────────────────────────────── -->
+<div id="panel-scrim"></div>
+<aside id="slide-panel" role="dialog" aria-modal="true" aria-labelledby="panel-title">
+  <div id="panel-top">
+    <span id="panel-mod-num"></span>
+    <button id="panel-close">✕ close</button>
+  </div>
+  <div id="panel-icon"></div>
+  <h2 id="panel-title"></h2>
+  <span id="panel-xp" class="xp-pill"></span>
+  <div id="panel-content">
+    <div class="content-line" style="width:92%"></div>
+    <div class="content-line" style="width:100%"></div>
+    <div class="content-line" style="width:76%"></div>
+    <div class="content-block">[ lesson content placeholder ]</div>
+    <div class="content-line" style="width:88%"></div>
+    <div class="content-line" style="width:60%"></div>
+  </div>
+  <button id="panel-cta">Start lesson →</button>
+</aside>
+
+<!-- ── API Key Modal ───────────────────────────────────────── -->
+<div id="modal-overlay">
+  <div id="api-modal" role="dialog" aria-modal="true" aria-labelledby="modal-heading">
+    <h2 id="modal-heading">Enter your API key</h2>
+    <p>This platform uses the Anthropic API for interactive exercises. Your key is used only in this session and is never saved.</p>
+    <label for="api-key-input">Anthropic API Key</label>
+    <input type="password" id="api-key-input" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+    <div id="modal-error">Please enter a valid API key (starts with sk-ant-).</div>
+    <button id="api-submit-btn">Start training</button>
+    <p class="modal-note">Your key is stored only in memory and cleared when you close this tab.</p>
+  </div>
+</div>
+
+<script>
+// ── SVG icon paths ───────────────────────────────────────────
+var ICON_SVG = {
+  ai:        '<g><rect x="6.5" y="6.5" width="11" height="11" rx="2.2"/><circle cx="12" cy="12" r="2.4"/><path d="M9 3.5v3M12 3.5v3M15 3.5v3M9 17.5v3M12 17.5v3M15 17.5v3M3.5 9h3M3.5 12h3M3.5 15h3M17.5 9h3M17.5 12h3M17.5 15h3"/></g>',
+  pencil:    '<g><path d="M4 20l1.2-4L16 5.2a2 2 0 0 1 2.8 0l0 0a2 2 0 0 1 0 2.8L8 18.8 4 20z"/><path d="M14.5 6.7l2.8 2.8"/></g>',
+  refresh:   '<g><path d="M19 8a7 7 0 0 0-12-2.5L4.5 8"/><path d="M5 16a7 7 0 0 0 12 2.5L19.5 16"/><path d="M4.5 4.5V8H8M19.5 19.5V16H16"/></g>',
+  shield:    '<g><path d="M12 3.5l6.5 2.4v5.1c0 4.3-2.8 7.4-6.5 9-3.7-1.6-6.5-4.7-6.5-9V5.9L12 3.5z"/><circle cx="12" cy="11" r="1.8"/><path d="M12 12.8v2.4"/></g>',
+  search:    '<g><circle cx="10.5" cy="10.5" r="5.2"/><path d="M14.4 14.4L20 20"/><path d="M10.5 8v3M10.5 13v.1"/></g>',
+  briefcase: '<g><rect x="3.5" y="7.5" width="17" height="11" rx="2"/><path d="M8.5 7.5V6a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v1.5"/><path d="M3.5 12.5h17M12 11.5v2"/></g>',
+  bolt:      '<g><path d="M13 3l-7 10h5l-1 8 7-10h-5l1-8z"/></g>',
+  book:      '<g><path d="M5 5.5A1.5 1.5 0 0 1 6.5 4H19v14H6.5A1.5 1.5 0 0 0 5 19.5V5.5z"/><path d="M5 19.5A1.5 1.5 0 0 1 6.5 18H19"/><path d="M9 8h6M9 11h6"/></g>',
+  door:      '<g><path d="M6 3.5h12V20.5H6z"/><path d="M6 20.5H4.5M18 20.5h1.5"/><circle cx="14.5" cy="12" r="0.9"/></g>',
+};
+
+function iconSVG(name, size, color) {
+  size  = size  || 34;
+  color = color || 'currentColor';
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none"'
+    + ' stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'
+    + ' style="display:block">' + (ICON_SVG[name] || '') + '</svg>';
+}
+
+function lockSVG(size) {
+  size = size || 26;
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none"'
+    + ' stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+    + '<rect x="5" y="10.5" width="14" height="9.5" rx="2"/>'
+    + '<path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>'
+    + '<circle cx="12" cy="15" r="1.1"/></svg>';
+}
+
+function checkSVG(size, color) {
+  size  = size  || 15;
+  color = color || '#fff';
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none"'
+    + ' stroke="' + color + '" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">'
+    + '<path d="M5 12.5l4.5 4.5L19 6.5"/></svg>';
+}
+
+// ── Data ─────────────────────────────────────────────────────
+var MODULES = [
+  { id: 1, icon: 'ai',        title: 'What Is AI Actually Doing?', xp: 100 },
+  { id: 2, icon: 'pencil',    title: 'Writing a Good Prompt',      xp: 100 },
+  { id: 3, icon: 'refresh',   title: 'Productive Friction',        xp: 100 },
+  { id: 4, icon: 'shield',    title: 'What Not to Put In',         xp: 100 },
+  { id: 5, icon: 'search',    title: 'Knowing When AI Is Wrong',   xp: 100 },
+  { id: 6, icon: 'briefcase', title: 'AI for Your Actual Job',     xp: 100 },
+  { id: 7, icon: 'bolt',      title: 'LYRA: Prompt Optimisation',  xp: 100 },
+  { id: 8, icon: 'book',      title: 'Legal Prompt Library',       xp: 100 },
+  { id: 9, icon: 'door',      title: 'The Escape Room',            xp: 200, boss: true },
+];
+
+var BADGE_COUNT = 10;
+
+// ── State ─────────────────────────────────────────────────────
+var apiKey    = '';
+var completed = [];   // array of module ids completed
+var pulseIdx  = -1;
+
+function xpTotal() {
+  return completed.reduce(function(s, id) {
+    var m = MODULES.find(function(x) { return x.id === id; });
+    return s + (m ? m.xp : 0);
+  }, 0);
+}
+
+function statusOf(id) {
+  if (completed.includes(id)) return 'completed';
+  if (id === 9) {
+    var allEight = [1,2,3,4,5,6,7,8].every(function(n) { return completed.includes(n); });
+    return allEight ? 'unlocked' : 'locked';
+  }
+  if (id === 1) return 'unlocked';
+  return completed.includes(id - 1) ? 'unlocked' : 'locked';
+}
+
+// ── Path geometry ─────────────────────────────────────────────
+var STEP     = 168;   // px between node centres
+var SINE_AMP = 26;    // % amplitude of serpentine
+
+function positions() {
+  return MODULES.map(function(m, i) {
+    return {
+      top:     40 + i * STEP,
+      leftPct: 50 + Math.sin(i * 0.9) * SINE_AMP,
+    };
+  });
+}
+
+function pathHeight() { return 40 + MODULES.length * STEP + 100; }
+
+function buildSVGPath(pos) {
+  var nodeR = 46; // half of 92px node
+  return pos.map(function(p, i) {
+    var x = p.leftPct, y = p.top + nodeR;
+    if (i === 0) return 'M ' + x + ' ' + y;
+    var prev = pos[i - 1], py = prev.top + nodeR, my = (py + y) / 2;
+    return 'C ' + prev.leftPct + ' ' + my + ', ' + x + ' ' + my + ', ' + x + ' ' + y;
+  }).join(' ');
+}
+
+// ── Render ────────────────────────────────────────────────────
+function renderBadges() {
+  var shelf = document.getElementById('badge-shelf');
+  shelf.innerHTML = '';
+  var lit = completed.length;
+  for (var i = 0; i < BADGE_COUNT; i++) {
+    var dot = document.createElement('div');
+    dot.className = 'badge-dot' + (i < lit ? ' lit' : '') + (i === pulseIdx ? ' pulsing' : '');
+    if (i < lit) dot.innerHTML = checkSVG(13, '#fff');
+    shelf.appendChild(dot);
+  }
+}
+
+function renderProgress() {
+  var n   = completed.length;
+  var pct = Math.round((n / 9) * 100);
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = n + ' of 9';
+}
+
+var _xpShown = 0;
+function animateXP(target) {
+  var from  = _xpShown;
+  if (from === target) return;
+  var start = performance.now();
+  var dur   = 700;
+  var raf, fallback;
+  function tick(now) {
+    var p     = Math.min(1, (now - start) / dur);
+    var eased = 1 - Math.pow(1 - p, 3);
+    var val   = Math.round(from + (target - from) * eased);
+    document.getElementById('xp-val').textContent = val;
+    if (p < 1) { raf = requestAnimationFrame(tick); }
+    else        { _xpShown = target; }
+  }
+  raf      = requestAnimationFrame(tick);
+  fallback = setTimeout(function() {
+    cancelAnimationFrame(raf);
+    document.getElementById('xp-val').textContent = target;
+    _xpShown = target;
+  }, dur + 80);
+}
+
+function renderPath() {
+  var pos = positions();
+  var h   = pathHeight();
+  var container = document.getElementById('path-container');
+  container.style.height = h + 'px';
+
+  // SVG path
+  var d   = buildSVGPath(pos);
+  var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.id  = 'path-svg';
+  svg.setAttribute('viewBox', '0 0 100 ' + h);
+  svg.setAttribute('preserveAspectRatio', 'none');
+
+  var pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  pathEl.setAttribute('d', d);
+  pathEl.setAttribute('fill', 'none');
+  pathEl.setAttribute('stroke', '#1e3358');
+  pathEl.setAttribute('stroke-width', '0.7');
+  pathEl.setAttribute('stroke-dasharray', '2 2.4');
+  pathEl.setAttribute('stroke-linecap', 'round');
+  pathEl.setAttribute('opacity', '0.8');
+  pathEl.setAttribute('vector-effect', 'non-scaling-stroke');
+  svg.appendChild(pathEl);
+
+  // Clear and re-render
+  container.innerHTML = '';
+  container.appendChild(svg);
+
+  MODULES.forEach(function(m, i) {
+    var st        = statusOf(m.id);
+    var unlocked  = st === 'unlocked';
+    var done      = st === 'completed';
+    var isHero    = m.id === 1 && unlocked;
+    var isBoss    = !!m.boss;
+    var p         = pos[i];
+
+    var wrap = document.createElement('div');
+    wrap.className = 'node-wrap' + (isBoss ? ' boss-node' : '') + (unlocked || done ? '' : ' locked');
+    wrap.style.top  = p.top + 'px';
+    wrap.style.left = p.leftPct + '%';
+
+    // Node circle
+    var node = document.createElement('div');
+    node.className = 'path-node'
+      + (isBoss  ? ' boss'        : '')
+      + (isHero  ? ' hero'        : '')
+      + (done    ? ' completed'   : '')
+      + (!unlocked && !done ? ' locked-state' : '');
+
+    // Number badge
+    var numBadge = document.createElement('span');
+    numBadge.className = 'node-num';
+    numBadge.textContent = String(m.id).padStart(2, '0');
+    node.appendChild(numBadge);
+
+    // Boss tag
+    if (isBoss && !done) {
+      var bossTag = document.createElement('span');
+      bossTag.className = 'boss-tag';
+      bossTag.textContent = 'BOSS';
+      node.appendChild(bossTag);
+    }
+
+    // Icon or lock
+    var iconWrap = document.createElement('div');
+    iconWrap.style.color = isBoss ? 'var(--red)' : 'var(--accent)';
+    if (st === 'locked') {
+      iconWrap.style.color = 'var(--mid)';
+      iconWrap.innerHTML = lockSVG(26);
+    } else {
+      iconWrap.innerHTML = iconSVG(m.icon, isBoss ? 42 : 36);
+    }
+    node.appendChild(iconWrap);
+
+    // Check badge
+    if (done) {
+      var chk = document.createElement('span');
+      chk.className = 'node-check';
+      chk.innerHTML = checkSVG(14, '#fff');
+      node.appendChild(chk);
+    }
+
+    wrap.appendChild(node);
+
+    // Label
+    var label = document.createElement('div');
+    label.className = 'node-label';
+    label.textContent = m.title;
+    wrap.appendChild(label);
+
+    // XP pill
+    var pill = document.createElement('span');
+    pill.className = 'xp-pill' + (isBoss ? ' boss-pill' : '');
+    pill.textContent = '+' + m.xp + ' XP';
+    wrap.appendChild(pill);
+
+    // Tooltip for locked
+    if (st === 'locked') {
+      var tipText = isBoss
+        ? 'Complete all modules to unlock'
+        : 'Complete the previous module to unlock';
+
+      wrap.addEventListener('mouseenter', function() { showTip(wrap, tipText, isBoss); });
+      wrap.addEventListener('mouseleave', function()  { hideTip(wrap); });
+    }
+
+    // Click handler
+    if (unlocked) {
+      wrap.addEventListener('click', function() { openPanel(m); });
+    }
+
+    container.appendChild(wrap);
+  });
+}
+
+// ── Tooltip helpers ───────────────────────────────────────────
+function showTip(wrap, text, isBoss) {
+  if (wrap.querySelector('.tip-bubble')) return;
+  var tip = document.createElement('div');
+  tip.className = 'tip-bubble' + (isBoss ? ' boss-tip' : '');
+  tip.textContent = text;
+  // position relative to the node circle inside wrap
+  var node = wrap.querySelector('.path-node');
+  node.style.position = 'relative'; // ensure relative
+  node.appendChild(tip);
+}
+
+function hideTip(wrap) {
+  var tip = wrap.querySelector('.tip-bubble');
+  if (tip) tip.parentNode.removeChild(tip);
+}
+
+// ── Slide panel ───────────────────────────────────────────────
+function openPanel(m) {
+  document.getElementById('panel-mod-num').textContent = 'Module ' + String(m.id).padStart(2, '0');
+  document.getElementById('panel-title').textContent   = m.title;
+  var xpEl = document.getElementById('panel-xp');
+  xpEl.textContent = '+' + m.xp + ' XP';
+  xpEl.className   = 'xp-pill' + (m.boss ? ' boss-pill' : '');
+
+  var iconBox = document.getElementById('panel-icon');
+  iconBox.style.color = m.boss ? 'var(--red)' : 'var(--accent)';
+  iconBox.innerHTML   = iconSVG(m.icon, 40);
+
+  document.getElementById('panel-scrim').classList.add('open');
+  document.getElementById('slide-panel').classList.add('open');
+  document.getElementById('slide-panel').focus();
+}
+
+function closePanel() {
+  document.getElementById('panel-scrim').classList.remove('open');
+  document.getElementById('slide-panel').classList.remove('open');
+}
+
+document.getElementById('panel-close').addEventListener('click', closePanel);
+document.getElementById('panel-scrim').addEventListener('click', closePanel);
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closePanel();
+});
+
+// ── Full render pass ──────────────────────────────────────────
+function render() {
+  renderPath();
+  renderBadges();
+  renderProgress();
+  animateXP(xpTotal());
+}
+
+// ── API key modal ─────────────────────────────────────────────
+document.getElementById('api-submit-btn').addEventListener('click', function() {
+  var val = document.getElementById('api-key-input').value.trim();
+  if (!val || !val.startsWith('sk-ant-')) {
+    document.getElementById('modal-error').style.display = 'block';
+    document.getElementById('api-key-input').focus();
+    return;
+  }
+  document.getElementById('modal-error').style.display = 'none';
+  apiKey = val;   // stored in JS variable only — never written to any storage
+  document.getElementById('api-key-input').value = '';
+  document.getElementById('modal-overlay').classList.add('hidden');
+});
+
+document.getElementById('api-key-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('api-submit-btn').click();
+});
+
+// ── Init ──────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
