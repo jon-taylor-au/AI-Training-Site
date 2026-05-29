@@ -8,17 +8,20 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg:        #0a1628;
-    --accent:    #2563eb;
-    --accent-hi: #3b82f6;
+    --bg:        #37424a;
+    --accent:    #d95e00;
+    --accent-hi: #ec7a08;
     --text:      #ffffff;
-    --surface:   #f1f5f9;
+    --surface:   #f2f2f2;
     --success:   #5b8f22;
-    --dark:      #0d1f3c;
-    --border:    #1e3358;
-    --muted:     #94a3b8;
-    --mid:       #64748b;
+    --dark:      #2e373e;
+    --border:    #4a555e;
+    --muted:     #8f8f8f;
+    --mid:       #8f8f8f;
     --red:       #aa1948;
+    --teal:      #007ea3;
+    --purple:    #693a77;
+    --aqua:      #00afd8;
     --node-sz:   92px;
     --boss-sz:   104px;
   }
@@ -144,9 +147,9 @@
   }
 
   @keyframes badge-pulse {
-    0%   { transform: scale(1);    box-shadow: 0 0 0 0 rgba(37,99,235,0.7); }
-    40%  { transform: scale(1.35); box-shadow: 0 0 0 8px rgba(37,99,235,0); }
-    100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(37,99,235,0); }
+    0%   { transform: scale(1);    box-shadow: 0 0 0 0 rgba(217,94,0,0.7); }
+    40%  { transform: scale(1.35); box-shadow: 0 0 0 8px rgba(217,94,0,0); }
+    100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(217,94,0,0); }
   }
 
   /* ── Main ────────────────────────────────────────────────── */
@@ -224,8 +227,8 @@
   }
 
   @keyframes hero-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.4); }
-    50%       { box-shadow: 0 0 0 10px rgba(37,99,235,0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(217,94,0,0.5); }
+    50%       { box-shadow: 0 0 0 12px rgba(217,94,0,0); }
   }
 
   .node-wrap:not(.locked):hover .path-node {
@@ -400,7 +403,7 @@
   #panel-icon {
     width: 70px; height: 70px;
     border-radius: 16px;
-    background: rgba(37,99,235,0.12);
+    background: rgba(217,94,0,0.1);
     border: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
     color: var(--accent);
@@ -510,7 +513,17 @@
 
   #api-submit-btn:hover { background: var(--accent-hi); }
 
-  .modal-note { font-size: 0.75rem; color: #475569; margin-top: 12px; text-align: center; }
+  .modal-note { font-size: 0.75rem; color: #8f8f8f; margin-top: 12px; text-align: center; }
+
+  #api-skip-btn {
+    width: 100%; background: none; border: none;
+    color: var(--muted); font-size: 0.8rem;
+    padding: 8px; cursor: pointer; margin-top: 4px;
+    text-decoration: underline; text-underline-offset: 2px;
+    transition: color 0.2s;
+  }
+
+  #api-skip-btn:hover { color: var(--text); }
 
   /* ── Mobile tweaks ────────────────────────────────────────── */
   @media (max-width: 520px) {
@@ -539,7 +552,7 @@
   <div id="header-right">
     <div id="xp-counter">
       <!-- bolt icon -->
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="#2563eb" stroke="none">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="#d95e00" stroke="none">
         <path d="M13 2l-8 11h6l-1 9 8-12h-6l1-8z"/>
       </svg>
       <span id="xp-val">0</span> XP
@@ -586,6 +599,7 @@
     <div id="modal-error">Please enter a valid API key (starts with sk-ant-).</div>
     <button id="api-submit-btn">Start training</button>
     <p class="modal-note">Your key is stored only in memory and cleared when you close this tab.</p>
+    <button id="api-skip-btn">Skip for now — browse without API features</button>
   </div>
 </div>
 
@@ -918,6 +932,10 @@ document.getElementById('api-submit-btn').addEventListener('click', function() {
 
 document.getElementById('api-key-input').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') document.getElementById('api-submit-btn').click();
+});
+
+document.getElementById('api-skip-btn').addEventListener('click', function() {
+  document.getElementById('modal-overlay').classList.add('hidden');
 });
 
 // ── Init ──────────────────────────────────────────────────────

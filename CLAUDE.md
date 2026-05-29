@@ -26,14 +26,24 @@ These are non-negotiable. Never violate them.
 
 ## Visual Design Tokens
 
-| Token | Value |
-|---|---|
-| Background | `#0a1628` (deep navy) |
-| Primary accent | `#2563eb` (electric blue) |
-| Text | `#ffffff` |
-| Surface / card | `#f1f5f9` (light grey) |
-| Success / unlock | `#16a34a` |
-| Font | System sans-serif stack |
+### Sparke Helmore Brand Palette
+
+| Name | Hex | Use |
+|---|---|---|
+| Primary | `#d95e00` | Headings, accents, XP pills, unlocked node borders |
+| Primary-Alt | `#ec7a08` | Hover/brighten state, active module glow |
+| Accent | `#aa1948` | Escape Room (boss module) only |
+| Dark | `#37424a` | Page background, header/sidebar backgrounds |
+| Mid | `#8f8f8f` | Captions, dividers, secondary text |
+| Light | `#f2f2f2` | Card surfaces, completed-module backgrounds |
+| White | `#ffffff` | Text on dark backgrounds |
+| Success | `#5b8f22` | Completed checkmarks |
+
+Secondary accents (use sparingly, one per context max):
+- Teal `#007ea3`
+- Purple `#693a77`
+- Aqua `#00afd8`
+- Green `#5b8f22`
 
 Persistent header: platform title ("Sparke AI Training"), XP counter, badge shelf (10 slots, greyed until earned).
 Progress bar across top: shows X/9 complete (8 modules + escape room).
